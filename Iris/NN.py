@@ -24,12 +24,14 @@ class ClassificationReport:
     def __init__(self,model):
         self.model=model
 
-    def plot_ROC(self):
+    def plot_ROC(self,classnames=None):
         classes=np.max(self.labels)
+        if(classnames == None):
+            classnames=[f"Class{c}" for c in range(classes+1)]
         plt.figure(figsize=(20,10))
         for c in range(classes+1):
          tpr, fpr, _ = roc_curve(self.labels==c, self.prob[:,c]) 
-         plt.plot(tpr, fpr, label = f"Class{c}")
+         plt.plot(tpr, fpr, label = classnames[c])
          plt.title("ROC")
          plt.xlabel("False Positive Rate")
          plt.ylabel("True Positive Rate")
@@ -43,7 +45,15 @@ class ClassificationReport:
         for c in range(classes+1):
          tpr, fpr, _ = roc_curve(self.labels==c, self.prob[:,c]) 
          print(f"Clas_{c}:",auc(tpr,fpr))
-
+            
+    def AUC(self):
+        classes=np.max(self.labels)
+        aucs=[]
+        for c in range(classes+1):
+         tpr, fpr, _ = roc_curve(self.labels==c, self.prob[:,c]) 
+         aucs.append(auc(tpr,fpr))
+        return aucs
+    
     def fit(self,X,Y):
         prob=np.array(self.model.predict(X))
         if(len(prob.shape)==1):
@@ -164,8 +174,8 @@ class NN(Module):
     def save(self, path='model'):
         torch.save(self.state_dict(), path)
 
-    def load(self, path='model'):
-        self.load_state_dict(torch.load(path))
+    def load(self, path='model',device='cpu'):
+        self.load_state_dict(torch.load(path,map_location=torch.device(device)))
 
     def optimization(self, criterion, optimizer):
         self.criterion = criterion
